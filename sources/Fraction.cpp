@@ -1,24 +1,10 @@
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 
 #include "Fraction.hpp"
 using namespace ariel;
 
-int gcd(int a, int b)
-{
-    a = abs(a);
-    b = abs(b);
-    if (a == 0)
-        return 1;
-    if (b == 0)
-        return 1;
-
-    if (a == b)
-        return a;
-    if (a > b)
-        return gcd(a - b, b);
-    return gcd(a, b - a);
-}
 
 Fraction::Fraction(int num, int denom)
 {
@@ -35,8 +21,16 @@ Fraction::Fraction(int num, int denom)
         }
         else
         {
-            this->counter = num;
-            this->denominator = denom;
+            if (denom == std::numeric_limits<int>::max() && num == std::numeric_limits<int>::max())
+            {
+                this->counter = 1;
+                this->denominator = 1;
+            }
+            else
+            {
+                this->counter = num;
+                this->denominator = denom;
+            }
         }
     }
 }
@@ -55,7 +49,7 @@ Fraction::Fraction(float num)
     }
     int counter = num * power;
     int denominator = power;
-    int commonDivisor = gcd(counter, denominator);
+    int commonDivisor = __gcd(counter, denominator);
     if (negative == 1)
     {
         counter = -1 * counter;
@@ -64,26 +58,20 @@ Fraction::Fraction(float num)
     this->denominator = denominator / commonDivisor;
 }
 // plus operators
-Fraction Fraction::operator+(Fraction &other) const
+Fraction ariel::operator+(const Fraction &first, const Fraction &second)
 {
-   
-         
-    long long num = (long long)this->counter *(long long) other.denominator + (long long)this->denominator * (long long)other.counter;
-    long long denom =(long long) this->denominator * (long long)other.denominator;
-     if (num > std::numeric_limits<int>::max() || denom > std::numeric_limits<int>::max()) {
-            throw std::overflow_error("");
-        }
 
-        if (num < std::numeric_limits<int>::min() || denom < std::numeric_limits<int>::min()) {
-            throw std::overflow_error("");
-        }
-    int commonDivisor = gcd((int)num,(int) denom);
-    return Fraction((int)num / commonDivisor, (int)denom / commonDivisor);
-}
-Fraction Fraction::operator+(float num) const
-{
-    Fraction second(num);
-    return this->operator+(second);
+    long long newNumerator = (long long)first.getNumerator() * (long long)second.getDenominator() + (long long)second.getNumerator() * (long long)first.getDenominator();
+    long long newDenominator = (long long)first.getDenominator() * (long long)second.getDenominator();
+    if (newNumerator > std::numeric_limits<int>::max() ||
+        newNumerator < std::numeric_limits<int>::min() ||
+        newDenominator > std::numeric_limits<int>::max() ||
+        newDenominator < std::numeric_limits<int>::min())
+    {
+        throw std::overflow_error("Overflow detected");
+    }
+    int gcd = __gcd((int)newNumerator, (int)newDenominator);
+    return Fraction((int)newNumerator / gcd, (int)newDenominator / gcd);
 }
 
 Fraction &Fraction::operator++()
@@ -99,26 +87,20 @@ Fraction Fraction::operator++(int num)
 }
 
 // minus operators
-Fraction Fraction::operator-(Fraction &other) const
+Fraction ariel::operator-(const Fraction &first, const Fraction &second)
 {
-    long long num = (long long)this->counter *(long long) other.denominator - (long long)this->denominator *(long long) other.counter;
-    long long denom = (long long)this->denominator * (long long)other.denominator;
-         if (num /denom > std::numeric_limits<int>::max()) {
-            throw std::overflow_error("to big");
-        }
-
-        if (num /denom < std::numeric_limits<int>::min()) {
-            throw std::overflow_error("to small");
-        }
-    int commonDivisor = gcd((int)num,(int) denom);
-    return Fraction((int)num / commonDivisor,(int) denom / commonDivisor);
+    long long newNumerator = (long long)first.getNumerator() * (long long)second.getDenominator() - (long long)second.getNumerator() * (long long)first.getDenominator();
+    long long newDenominator = (long long)first.getDenominator() * (long long)second.getDenominator();
+    if (newNumerator > std::numeric_limits<int>::max() ||
+        newNumerator < std::numeric_limits<int>::min() ||
+        newDenominator > std::numeric_limits<int>::max() ||
+        newDenominator < std::numeric_limits<int>::min())
+    {
+        throw std::overflow_error("Overflow detected");
+    }
+    int gcd = __gcd((int)newNumerator, (int)newDenominator);
+    return Fraction((int)newNumerator / gcd, (int)newDenominator / gcd);
 }
-Fraction Fraction::operator-(float num) const
-{
-    Fraction second(num);
-    return this->operator-(second);
-}
-
 Fraction &Fraction::operator--()
 {
     counter -= denominator;
@@ -131,46 +113,107 @@ Fraction Fraction::operator--(int num)
     return res;
 }
 
+// multipication operators
+Fraction ariel::operator*(const Fraction &first, const Fraction &second)
+{
+
+    long long newNumerator = (long long)first.getNumerator() * (long long)second.getNumerator();
+    long long newDenominator = (long long)first.getDenominator() * (long long)second.getDenominator();
+    if (newNumerator > std::numeric_limits<int>::max() ||
+        newNumerator < std::numeric_limits<int>::min() ||
+        newDenominator > std::numeric_limits<int>::max() ||
+        newDenominator < std::numeric_limits<int>::min())
+    {
+        throw std::overflow_error("Overflow detected");
+    }
+    int gcd = __gcd((int)newNumerator, (int)newDenominator);
+    return Fraction((int)newNumerator / gcd, (int)newDenominator / gcd);
+}
+
+// divide operators
+Fraction ariel::operator/(const Fraction &first, const Fraction &second)
+{
+    int max = std::numeric_limits<int>::max();
+
+    if (second.getNumerator() == 0)
+    {
+        throw std::runtime_error("division by zero");
+    }
+    long long newNumerator = (long long)first.getNumerator() * (long long)second.getDenominator();
+    long long newDenominator = (long long)first.getDenominator() * (long long)second.getNumerator();
+    if (newNumerator > std::numeric_limits<int>::max() ||
+        newNumerator < std::numeric_limits<int>::min() ||
+        newDenominator > std::numeric_limits<int>::max() ||
+        newDenominator < std::numeric_limits<int>::min())
+    {
+        throw std::overflow_error("Overflow detected");
+    }
+    int gcd = __gcd((int)newNumerator, (int)newDenominator);
+    return Fraction((int)newNumerator / gcd, (int)newDenominator / gcd);
+}
 // comparison operators
-bool Fraction ::operator<(Fraction &other) const
-{
-    double first = (double)this->counter / this->denominator;
-    double second = (double)other.getNumerator() / other.getDenominator();
-    return first < second;
-}
-bool Fraction ::operator<(float num) const
-{
-    Fraction second(num);
 
-    return this->operator<(second);
+bool ariel::operator>(const Fraction &first, const Fraction &second)
+{
+    return (first.getNumerator() * second.getDenominator()) > (second.getNumerator() * first.getDenominator());
 }
 
-bool Fraction ::operator<=(Fraction &other) const
+bool ariel::operator>=(const Fraction &first, const Fraction &second)
 {
-    return this->counter * other.getDenominator() <= other.getNumerator() * this->denominator;
-}
-bool Fraction ::operator<=(float num) const
-{
-    Fraction second(num);
-    return this->operator<=(second);
-}
-bool Fraction ::operator>(Fraction &other) const
-{
-    double first = (double)this->counter / this->denominator;
-    double second = (double)other.getNumerator() / other.getDenominator();
-    return first > second;
-}
-bool Fraction ::operator>(float num) const
-{
-    Fraction second(num);
-
-    return this->operator>(second);
-}
-
-bool Fraction ::operator>=(float num) const
-{
-    Fraction second(num);
-    int numerator1 = this->counter * second.getDenominator();
-    int numerator2 = second.getNumerator() * this->denominator;
+    int numerator1 = first.getNumerator() * second.getDenominator();
+    int numerator2 = second.getNumerator() * first.getDenominator();
     return numerator1 >= numerator2;
+}
+
+bool ariel::operator<(const Fraction &first, const Fraction &second)
+{
+    int num1 = first.getNumerator() * second.getDenominator();
+    int num2 = second.getNumerator() * first.getDenominator();
+    return num1 < num2;
+}
+bool ariel::operator<=(const Fraction &first, const Fraction &second)
+{
+    return first.getNumerator() * second.getDenominator() <= second.getNumerator() * first.getDenominator();
+}
+bool ariel::operator==(const Fraction &first, const Fraction &second)
+{
+    const float digit = 1000;
+    int firstnum = (int)(((float)first.getNumerator() / (float)first.getDenominator()) * digit);
+    int secondnum = (int)(((float)second.getNumerator() / (float)second.getDenominator()) * digit);
+    return firstnum == secondnum;
+}
+bool ariel::operator!=(const Fraction &first, const Fraction &second)
+{
+    return !(first == second);
+}
+
+// output and input  operators
+
+std::ostream &ariel::operator<<(std::ostream &output, const Fraction &other)
+{
+    int gcd = __gcd(abs(other.counter), abs(other.denominator));
+    if (other.denominator < 0)
+    {
+        output << -1 * other.getNumerator() / gcd << '/' << -1 * other.getDenominator() / gcd;
+    }
+    else
+    {
+        output << other.getNumerator() / gcd << '/' << other.getDenominator() / gcd;
+    }
+    return output;
+}
+std::istream &ariel::operator>>(std::istream &input, Fraction &other)
+{
+    int counter = 0;
+    int denominator = 0;
+    input >> counter >> denominator;
+
+    if (denominator == 0)
+    {
+        throw std::runtime_error("division by zero");
+    }
+
+    other = Fraction(counter, denominator);
+
+    return input;
 }
